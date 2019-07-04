@@ -2,6 +2,7 @@ import json
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import db_helper
 from flask_socketio import SocketIO
+import flask_socketio
 import os
 
 app = Flask(__name__)
@@ -72,7 +73,7 @@ def handle_msg_request(message_dict) -> None:
         messages_dict['hasNewData'] = False
         socketio.emit('newMessages', messages_dict)
     message_dict['dataRows'] = data
-    socketio.emit('newMessages', message_dict)
+    flask_socketio.emit('newMessages', message_dict, broadcast=False)
 
 @app.route("/sendchat", methods = ['POST'])
 def handle_new_message():
