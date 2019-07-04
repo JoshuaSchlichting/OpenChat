@@ -59,9 +59,7 @@ def emit_chat_message(message_id) -> None:
     return_dict = {
         'dataRows': messages
     }
-    # for some reason, right now, this only properly broadcasts when broadcast is set to False...
-    # ...this is weird.
-    socketio.emit('newMessages', return_dict, broadcast=False)
+    socketio.emit('newMessages', return_dict, broadcast=True, namespace='/')
 
 
 @socketio.on('requestmessages')
