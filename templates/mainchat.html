@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+<head>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</head>
+
+<body style="height: 100%;">
+
+
+    <label for="userNameInput">User Name</label>
+    <input id="userNameInput" placeholder="I<3Internet">
+
+{#      <div class="form-group">#}
+{#        <label for="textColor">COLOR</label>#}
+{#        <select class="form-control" id="textColor">#}
+{#          <option>Red</option>#}
+{#          <option>Green</option>#}
+{#          <option>Blue</option>#}
+{#          <option>Yellow</option>#}
+{#          <option>Purple</option>#}
+{#        </select>#}
+{#      </div>#}
+
+        <textarea id='chatArea' class="form-control" style="height:85%;" readonly>
+        </textarea>
+
+    <div style="height: 15%; left: 0; position: relative;right: 0;">
+        <label for="userNameInput">Input:</label><br/>
+        <textarea class="form-control" id="chatInput" ></textarea>
+    </div>
+
+</body>
+
+
+
+<script src="{{ url_for('static', filename='js/socket.io.slim.js') }}"></script>
+<script type="application/javascript">
+  let hosturl = window.location.href;
+  hosturl = hosturl.replace('http://', '');
+  hosturl = hosturl.replace(':8000/chat', '');
+
+  let socket = io('ws://'+ hosturl + ':8000', {transports: ['websocket']});
+  socket.on('connect', function(){
+    socket.emit('message', 'Connected!');
+  });
+  socket.on('message', function (msg) {
+    alert(msg);
+  });
+  socket.on('newchat', function(chatMsg) {
+    x.appendChatLines([chatMsg]);
+  });
+  socket.on('newMessages', function(data){
+     x.appendChatLines(data['dataRows']);
+  });
+
+
+
+  class MainChat {
+
+    constructor(socketio_obj){
+      this.socket = socketio_obj;
+      this.chatInput = document.getElementById('chatInput');
+      this.chatArea = document.getElementById('chatArea');
+      this.chatLines = [];
+      this.requestMessages();
+    }
+
+    getFilteredChatLines() {
+      let filteredChatLines = [];
+      for (let i = 0; i < this.chatLines.length; i++) {
+        filteredChatLines.push(this.unescape(this.chatLines[i]));
+      }
+      return filteredChatLines;
+    }
+
+    unescape(stringOfText) {
+      return new DOMParser().parseFromString(stringOfText, 'text/html').querySelector('html').textContent;
+    }
+
+    appendChatWindow(messageDict){
+        let msg = messageDict.sendTs + ' - ' + messageDict.userName + ": " + messageDict.content;
+        this.chatArea.value += this.unescape(msg) + '\n';
+        this.scrollDown();
+    }
+
+    appendChatLines(chatLinesDict){
+
+        for (let [key, value] of Object.entries(chatLinesDict)) {
+            let chatLine = {
+                'id': key,
+                'sendTs': value.send_ts,
+                'userName': value.user_name,
+                'type': value.type,
+                'content': value.content
+            };
+            this.chatLines.push(chatLine);
+            this.appendChatWindow(chatLine);
+        }
+    }
+
+    sendChat() {
+        let userName = document.getElementById('userNameInput').value;
+        if(userName == ''){
+            alert("YOU MUST ENTER A USER NAME!");
+            return;
+        }
+        if(this.chatInput.value.trim() == ''){
+            alert("You must enter a message before sending!");
+            this.chatInput.value = '';
+            return;
+        }
+        let message = {
+          'message': document.getElementById('chatInput').value,
+          'userName': document.getElementById('userNameInput').value,
+          'lastId': this.getLastChatId()
+        };
+
+        this.socket.emit('sendchat', message);
+        this.chatInput.value = '';
+
+        //$.ajax({
+        //    type:"POST",
+        //    //dataType: "application/json",
+        //    data: message,
+        //    url: "sendchat",
+        //    success: (function(data){
+        //        if(data['messagePosted']){
+        //            this.requestMessages();
+        //            this.chatInput.value = '';
+        //        }
+        //    }).bind(this)
+        //})
+    }
+
+    scrollDown(){
+        this.chatArea.scrollTop = this.chatArea.scrollHeight;
+    }
+
+    getLastChatId(){
+        if(this.chatLines.length == 0){
+            return 0
+        }
+        return this.chatLines[this.chatLines.length -1].id;
+    }
+
+    requestMessages(){
+        let message = {
+          'lastId': this.getLastChatId()
+        };
+        this.socket.emit('requestmessages', message);
+        {#$.ajax({#}
+        {#    type:"POST",#}
+        {#    //dataType: "application/json",#}
+        {#    data: message,#}
+        {#    url: "requestmessages",#}
+        {#    success: (function(data){#}
+        {#        if(data['hasNewData']){#}
+        {#            this.appendChatLines(data['dataRows']);#}
+        {#        }else{#}
+        {#            console.log("No new data exists on server.");#}
+        {#        }#}
+        {#    }).bind(this)#}
+    }
+  }
+
+  var x = new MainChat(socket);
+  x.chatArea.value = '';
+  //x.requestMessages();
+  //setInterval(function(){
+   //   return x.requestMessages();
+  //}, 1000);
+
+
+
+
+
+  $("#chatInput").keyup(function(e) {
+     let code = e.keyCode ? e.keyCode : e.which;
+     if (code == 13) {
+       x.sendChat();
+     }
+  });
+
+
+
+</script>
+
+</html>
