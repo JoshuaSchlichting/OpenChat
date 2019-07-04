@@ -23,6 +23,11 @@ def get_chat_view():
     return render_template("mainchat.html", message_list=messages)
 
 
+@socketio.on('connect', namespace='/')
+def handle_new_connection():
+    print("New connection from " + request.remote_addr)
+
+
 @socketio.on('sendchat')
 def handle_incoming_msg(message_dict) -> None:
     """
