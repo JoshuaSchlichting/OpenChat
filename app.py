@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = ':~.C2%,36afzN6t4'
-socketio = SocketIO(app)
+socketio = SocketIO(app, logger=True)
 
 @app.route("/")
 def hello():
