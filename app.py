@@ -1,6 +1,5 @@
 import json
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from flask.globals import current_app
 import db_helper
 from flask_socketio import SocketIO
 import os
