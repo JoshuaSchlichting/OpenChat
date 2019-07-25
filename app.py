@@ -128,7 +128,6 @@ def handle_message(message) -> None:
 
 
 if __name__ == '__main__':
-    #app.run(host='0.0.0.0', debug=True)
     print("Starting!")
     socketio.run(app=app, log_output=True, host='0.0.0.0', port=8000)
     print("Done!")
